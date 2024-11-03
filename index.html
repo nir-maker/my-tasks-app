@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 10px;
+        direction: rtl;
+        text-align: center;
+        margin: 0;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        font-size: 16px;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      select {
+        width: 100%;
+        padding: 8px;
+        font-size: 16px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        margin-bottom: 15px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+      }
+      li {
+        margin: 5px 0;
+        font-size: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        background-color: #f9f9f9;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease-in-out;
+      }
+      .task-text {
+        flex-grow: 1;
+      }
+      .delete-btn {
+        color: red;
+        cursor: pointer;
+        font-size: 16px;
+        margin-left: 10px;
+      }
+      .share-btn {
+        color: green;
+        cursor: pointer;
+        font-size: 16px;
+        margin-left: 10px;
+      }
+      .matrix-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .quadrant {
+        border: 1px solid black;
+        padding: 10px;
+        min-height: 100px;
+        width: 100%;
+        height: auto;
+        position: relative;
+        margin: 0 auto;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .important-urgent {
+        background-color: #FFDD57;
+      }
+      .important-not-urgent {
+        background-color: #D0D0FF;
+      }
+      .not-important-urgent {
+        background-color: #FFC8C8;
+      }
+      .not-important-not-urgent {
+        background-color: #F0E68C;
+      }
+      .quadrant-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .label-important, .label-urgent {
+        font-weight: bold;
+        margin: 5px;
+      }
+      @media (max-width: 600px) {
+        .quadrant {
+          width: 90%;
+          height: auto;
+        }
+        input[type="text"], select, button {
+          font-size: 14px;
+          padding: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h2>רשימת משימות - ניהול זמן</h2>
+    <input type="text" id="taskInput" placeholder="הוסף משימה חדשה">
+    <select id="taskCategory">
+      <option value="important-urgent">חשוב ודחוף</option>
+      <option value="important-not-urgent">חשוב ולא דחוף</option>
+      <option value="not-important-urgent">לא חשוב ודחוף</option>
+      <option value="not-important-not-urgent">לא חשוב ולא דחוף</option>
+    </select>
+    <button onclick="addTask()">הוסף</button>
+    <button onclick="deleteAllTasks()">מחק את כל המשימות</button>
+
+    <div class="matrix-container">
+      <div class="quadrant important-urgent">
+        <div class="quadrant-title">חשוב ודחוף</div>
+        <ul id="importantUrgentList"></ul>
+      </div>
+      <div class="quadrant important-not-urgent">
+        <div class="quadrant-title">חשוב ולא דחוף</div>
+        <ul id="importantNotUrgentList"></ul>
+      </div>
+      <div class="quadrant not-important-urgent">
+        <div class="quadrant-title">לא חשוב ודחוף</div>
+        <ul id="notImportantUrgentList"></ul>
+      </div>
+      <div class="quadrant not-important-not-urgent">
+        <div class="quadrant-title">לא חשוב ולא דחוף</div>
+        <ul id="notImportantNotUrgentList"></ul>
+      </div>
+    </div>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+        .then(function() {
+          console.log('Service Worker Registered');
+        });
+      }
+
+      function renderTasks() {
+        var importantUrgentList = document.getElementById('importantUrgentList');
+        var importantNotUrgentList = document.getElementById('importantNotUrgentList');
+        var notImportantUrgentList = document.getElementById('notImportantUrgentList');
+        var notImportantNotUrgentList = document.getElementById('notImportantNotUrgentList');
+        
+        importantUrgentList.innerHTML = '';
+        importantNotUrgentList.innerHTML = '';
+        notImportantUrgentList.innerHTML = '';
+        notImportantNotUrgentList.innerHTML = '';
+
+        var tasks = getTasksFromStorage();
+        console.log('Tasks loaded from storage:', tasks); // Debugging line
+        tasks.forEach(function(task, index) {
+          var li = document.createElement('li');
+
+          var taskSpan = document.createElement('span');
+          taskSpan.textContent = task.text;
+          taskSpan.className = 'task-text';
+
+          var recommendation = getRecommendation(task.category);
+          var recommendationSpan = document.createElement('span');
+          recommendationSpan.textContent = recommendation;
+          recommendationSpan.className = 'recommendation-text';
+          recommendationSpan.style.marginRight = '10px';
+          recommendationSpan.style.fontWeight = 'bold';
+          recommendationSpan.style.color = '#555';
+
+          var shareBtn = document.createElement('span');
+          shareBtn.textContent = 'שתף בוואטסאפ';
+          shareBtn.className = 'share-btn';
+          shareBtn.onclick = function() {
+            var whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(task.text)}`;
+            window.open(whatsappUrl, '_blank');
+          };
+
+          var deleteBtn = document.createElement('span');
+          deleteBtn.textContent = 'מחק';
+          deleteBtn.className = 'delete-btn';
+          deleteBtn.onclick = function() {
+            if (confirm('האם אתה בטוח שברצונך למחוק את המשימה?')) {
+              deleteTask(index);
+            }
+          };
+
+          li.appendChild(taskSpan);
+          li.appendChild(recommendationSpan);
+          li.appendChild(shareBtn);
+          li.appendChild(deleteBtn);
+
+          switch(task.category) {
+            case 'important-urgent':
+              importantUrgentList.appendChild(li);
+              break;
+            case 'important-not-urgent':
+              importantNotUrgentList.appendChild(li);
+              break;
+            case 'not-important-urgent':
+              notImportantUrgentList.appendChild(li);
+              break;
+            case 'not-important-not-urgent':
+              notImportantNotUrgentList.appendChild(li);
+              break;
+          }
+        });
+      }
+
+      function getRecommendation(category) {
+        switch(category) {
+          case 'important-urgent':
+            return 'עשה את זה עכשיו';
+          case 'important-not-urgent':
+            return 'תכנן את זה';
+          case 'not-important-urgent':
+            return 'תאציל סמכויות';
+          case 'not-important-not-urgent':
+            return 'עזוב את זה';
+          default:
+            return '';
+        }
+      }
+
+      function addTask() {
+        var taskInput = document.getElementById('taskInput');
+        var taskCategory = document.getElementById('taskCategory').value;
+        var task = taskInput.value.trim();
+        if (task) {
+          var tasks = getTasksFromStorage();
+          var newTask = { text: task, category: taskCategory, timestamp: new Date().toISOString() };
+          tasks.push(newTask);
+          saveTasksToStorage(tasks);
+          console.log('Task added:', newTask); // Debugging line
+          renderTasks();
+          taskInput.value = '';
+        } else {
+          alert('נא להוסיף משימה לפני לחיצה על הוסף.');
+        }
+      }
+
+      function deleteTask(index) {
+        var tasks = getTasksFromStorage();
+        tasks.splice(index, 1);
+        saveTasksToStorage(tasks);
+        console.log('Task deleted, index:', index); // Debugging line
+        renderTasks();
+      }
+
+      function deleteAllTasks() {
+        if (confirm('האם אתה בטוח שברצונך למחוק את כל המשימות?')) {
+          saveTasksToStorage([]);
+          console.log('All tasks deleted'); // Debugging line
+          renderTasks();
+        }
+      }
+
+      function getTasksFromStorage() {
+        var tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+        return tasks;
+      }
+
+      function saveTasksToStorage(tasks) {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+      }
+
+      // הוספת הקריאה לפונקציה renderTasks() בעת טעינת העמוד
+      renderTasks();
+    </script>
+  </body>
+</html>
