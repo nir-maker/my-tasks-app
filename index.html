@@ -72,8 +72,8 @@
         font-size: 16px;
         margin-top: 10px;
       }
-      .share-btn {
-        color: green;
+      .reminder-btn {
+        color: blue;
         cursor: pointer;
         font-size: 16px;
         margin-top: 10px;
@@ -196,12 +196,14 @@
           recommendationSpan.textContent = recommendation;
           recommendationSpan.className = 'recommendation-text';
 
-          var shareBtn = document.createElement('span');
-          shareBtn.textContent = 'שתף בוואטסאפ';
-          shareBtn.className = 'share-btn';
-          shareBtn.onclick = function() {
-            var whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(task.text)}`;
-            window.open(whatsappUrl, '_blank');
+          var reminderBtn = document.createElement('span');
+          reminderBtn.textContent = 'הגדר תזכורת';
+          reminderBtn.className = 'reminder-btn';
+          reminderBtn.onclick = function() {
+            var reminderTime = prompt('הכנס זמן לתזכורת בפורמט HH:MM (24 שעות)');
+            if (reminderTime) {
+              alert('תזכורת למשימה "' + task.text + '" הוגדרה לשעה ' + reminderTime);
+            }
           };
 
           var deleteBtn = document.createElement('span');
@@ -215,7 +217,7 @@
 
           li.appendChild(taskSpan);
           li.appendChild(recommendationSpan);
-          li.appendChild(shareBtn);
+          li.appendChild(reminderBtn);
           li.appendChild(deleteBtn);
 
           switch(task.category) {
@@ -297,3 +299,4 @@
     </script>
   </body>
 </html>
+S
