@@ -54,9 +54,9 @@
         margin: 5px 0;
         font-size: 16px;
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
         background-color: #f9f9f9;
         padding: 10px;
         border-radius: 5px;
@@ -70,13 +70,18 @@
         color: red;
         cursor: pointer;
         font-size: 16px;
-        margin-left: 10px;
+        margin-top: 10px;
       }
       .share-btn {
         color: green;
         cursor: pointer;
         font-size: 16px;
-        margin-left: 10px;
+        margin-top: 10px;
+      }
+      .recommendation-text {
+        margin-top: 10px;
+        font-weight: bold;
+        color: #555;
       }
       .matrix-container {
         display: flex;
@@ -190,9 +195,6 @@
           var recommendationSpan = document.createElement('span');
           recommendationSpan.textContent = recommendation;
           recommendationSpan.className = 'recommendation-text';
-          recommendationSpan.style.marginRight = '10px';
-          recommendationSpan.style.fontWeight = 'bold';
-          recommendationSpan.style.color = '#555';
 
           var shareBtn = document.createElement('span');
           shareBtn.textContent = 'שתף בוואטסאפ';
